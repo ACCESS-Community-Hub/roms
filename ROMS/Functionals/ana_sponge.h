@@ -126,7 +126,7 @@
 !
       integer :: i, itrc, j
 !
-      real(r8) :: cff, innerF, outerF, val, width
+      real(r8) :: cff, innerF, outerF, outerFsth, val, width, widths
 !
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: factor
 
@@ -188,11 +188,12 @@
       END DO
 # endif
 
-#elif defined WC13
+#elif defined EAC
 !
-!  US West Coast sponge areas.
+!  EAC SEACOFS sponge areas.
 !
-      width=user(1)                        ! sponge width in grid points
+      width=user(1)                        ! sponge width in grid points for N and E brys
+      widths=user(2)                       ! sponge width in grid points for S bry
 
 # if defined UV_VIS2
 !
@@ -201,15 +202,16 @@
 !
       IF (LuvSponge(ng)) THEN
         innerF=visc2(ng)                   ! inner limit match value
-        outerF=100.0_r8                    ! outer limit maximum value
+        outerF=370.0_r8                    ! outer limit maximum value
+	outerFsth=500.0_r8
 !
 !  Southern edge.
 !
-        DO j=JstrT,MIN(INT(width),JendT)
-          val=innerF+(outerF-innerF)*(width-REAL(j,r8))/width
+        DO j=JstrT,MIN(INT(widths),JendT)
+          val=innerF+(outerFsth-innerF)*(widths-REAL(j,r8))/widths
           DO i=IstrT,IendT
-            MIXING(ng)%visc2_r(i,j)=MAX(MIN(val,outerF),innerF)
-            MIXING(ng)%visc2_p(i,j)=MAX(MIN(val,outerF),innerF)
+            MIXING(ng)%visc2_r(i,j)=MAX(MIN(val,outerFsth),innerF)
+            MIXING(ng)%visc2_p(i,j)=MAX(MIN(val,outerFsth),innerF)
           END DO
         END DO
 !
@@ -225,7 +227,18 @@
 !
 !  Western edge.
 !
-        DO i=IstrT,MIN(INT(width),IendT)
+!        DO i=IstrT,MIN(INT(width),IendT)
+!          DO j=MAX(JstrT,i),MIN(Mm(ng)+1-i,JendT)
+!            val=innerF+(outerF-innerF)*(width-REAL(i,r8))/width
+!            MIXING(ng) % visc2_r(i,j)=MAX(MIN(val,outerF),innerF)
+!            MIXING(ng) % visc2_p(i,j)=MAX(MIN(val,outerF),innerF)
+!          END DO
+!        END DO
+!      END IF
+!
+!  Eastern edge.
+!
+        DO i=MAX(IstrT,Lm(ng)+1-INT(width)),IendT  
           DO j=MAX(JstrT,i),MIN(Mm(ng)+1-i,JendT)
             val=innerF+(outerF-innerF)*(width-REAL(i,r8))/width
             MIXING(ng) % visc2_r(i,j)=MAX(MIN(val,outerF),innerF)
@@ -243,14 +256,15 @@
       DO itrc=1,NT(ng)
         IF (LtracerSponge(itrc,ng)) THEN
           innerF=tnu2(itrc,ng)             ! inner limit match value
-          outerF=50.0_r8                   ! outer limit maximum value
+          outerF=300.0_r8                   ! outer limit maximum value
+	  outerFsth=500.0_r8
 !
 !  Southern edge.
 !
-          DO j=JstrT,MIN(INT(width),JendT)
-            val=innerF+(outerF-innerF)*(width-REAL(j,r8))/width
+          DO j=JstrT,MIN(INT(widths),JendT)
+            val=innerF+(outerFsth-innerF)*(widths-REAL(j,r8))/widths
             DO i=IstrT,IendT
-              MIXING(ng) % diff2(i,j,itrc)=MAX(MIN(val,outerF),innerF)
+              MIXING(ng) % diff2(i,j,itrc)=MAX(MIN(val,outerFsth),innerF)
             END DO
           END DO
 !
@@ -265,14 +279,24 @@
 !
 !  Western edge.
 !
-          DO i=IstrT,MIN(INT(width),IendT)
-            DO j=MAX(JstrT,i),MIN(Mm(ng)+1-i,JendT)
-              val=innerF+(outerF-innerF)*(width-REAL(i,r8))/width
-              MIXING(ng) % diff2(i,j,itrc)=MAX(MIN(val,outerF),innerF)
-            END DO
-          END DO
-        END IF
-      END DO
+!          DO i=IstrT,MIN(INT(width),IendT)
+!            DO j=MAX(JstrT,i),MIN(Mm(ng)+1-i,JendT)
+!              val=innerF+(outerF-innerF)*(width-REAL(i,r8))/width
+!              MIXING(ng) % diff2(i,j,itrc)=MAX(MIN(val,outerF),innerF)
+!            END DO
+!          END DO
+!        END IF
+!      END DO
+!  Eastern edge.
+!
+        DO i=MAX(IstrT,Lm(ng)+1-INT(width)),IendT
+          DO j=MAX(JstrT,i),MIN(Mm(ng)+1-i,JendT)
+            val=innerF+(outerF-innerF)*(width-REAL(i,r8))/width
+            MIXING(ng) % diff2(i,j,itrc)=MAX(MIN(val,outerF),innerF)
+	   END DO
+        END DO
+      END IF
+     END DO
 # endif
 #endif
 !
